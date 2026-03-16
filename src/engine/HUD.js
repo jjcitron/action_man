@@ -1,20 +1,131 @@
 /**
- * Heads-up display: player health bar, enemy health bars, inventory.
+ * Heads-up display: health bars, combo counter, controls.
  * Rendered in screen space (not affected by camera).
  */
 export class HUD {
     constructor() {
         this.visible = true;
+
+        // Combo tracking
+        this.comboCount = 0;
+        this.comboTimer = 0;       // ms remaining before combo resets
+        this.comboWindow = 1500;   // ms to land next hit before combo drops
+        this.comboDisplayTimer = 0; // keeps text visible briefly after combo ends
+        this.lastComboCount = 0;
+
+        // Combo text animation
+        this.comboPulse = 0;       // scale pulse on new hit
+        this.comboShake = 0;       // x offset shake
+    }
+
+    /** Call from Game.js when player lands a hit */
+    registerHit() {
+        this.comboCount++;
+        this.comboTimer = this.comboWindow;
+        this.comboPulse = 1.0;
+        this.comboShake = (Math.random() - 0.5) * 12;
+    }
+
+    /** Call each frame with dt */
+    update(dt) {
+        if (this.comboTimer > 0) {
+            this.comboTimer -= dt;
+            if (this.comboTimer <= 0) {
+                // Combo ended — keep display briefly
+                this.lastComboCount = this.comboCount;
+                this.comboDisplayTimer = this.comboCount >= 3 ? 800 : 0;
+                this.comboCount = 0;
+            }
+        }
+
+        if (this.comboDisplayTimer > 0) {
+            this.comboDisplayTimer -= dt;
+        }
+
+        // Decay pulse
+        if (this.comboPulse > 0) {
+            this.comboPulse *= 0.88;
+            if (this.comboPulse < 0.02) this.comboPulse = 0;
+        }
+        // Decay shake
+        this.comboShake *= 0.85;
     }
 
     render(ctx, player, enemies, inventory) {
         if (!this.visible) return;
 
-        // Player health bar (top-left)
         this.drawPlayerHealth(ctx, player);
-
-        // Controls hint (bottom-right)
+        this.drawCombo(ctx);
         this.drawControls(ctx);
+    }
+
+    drawCombo(ctx) {
+        // Show active combo
+        let count = this.comboCount;
+        let fading = false;
+
+        // Or show the finished combo briefly
+        if (count === 0 && this.comboDisplayTimer > 0) {
+            count = this.lastComboCount;
+            fading = true;
+        }
+
+        if (count < 2) return;
+
+        ctx.save();
+
+        const cx = ctx.canvas.width / 2;
+        const cy = 80;
+
+        // Fade out when combo display is ending
+        if (fading) {
+            ctx.globalAlpha = Math.min(1, this.comboDisplayTimer / 400);
+        }
+
+        // Pulse scale
+        const baseScale = 1.0;
+        const pulse = baseScale + this.comboPulse * 0.4;
+
+        ctx.translate(cx + this.comboShake, cy);
+        ctx.scale(pulse, pulse);
+
+        // Combo number
+        const size = Math.min(60, 28 + count * 4);
+        ctx.font = `bold ${size}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Color ramps up with combo
+        let color;
+        if (count >= 10) color = '#ff00ff';      // purple — legendary
+        else if (count >= 7) color = '#ff4400';   // red-orange — blazing
+        else if (count >= 5) color = '#ff8800';   // orange — hot
+        else if (count >= 3) color = '#ffcc00';   // yellow — nice
+        else color = '#ffffff';                    // white — basic
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillText(`${count}`, 2, 2);
+
+        // Main text
+        ctx.fillStyle = color;
+        ctx.fillText(`${count}`, 0, 0);
+
+        // Label below
+        ctx.font = 'bold 14px monospace';
+        let label;
+        if (count >= 10) label = 'UNSTOPPABLE!';
+        else if (count >= 7) label = 'INCREDIBLE!';
+        else if (count >= 5) label = 'AWESOME!';
+        else if (count >= 3) label = 'COMBO!';
+        else label = 'HITS';
+
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillText(label, 1, size / 2 + 13);
+        ctx.fillStyle = color;
+        ctx.fillText(label, 0, size / 2 + 12);
+
+        ctx.restore();
     }
 
     drawControls(ctx) {
@@ -48,21 +159,17 @@ export class HUD {
         const h = 16;
         const hpRatio = player.hp / player.maxHp;
 
-        // Label
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 12px monospace';
         ctx.fillText('HP', x, y - 4);
 
-        // Background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(x, y, w, h);
 
-        // Health fill
         const color = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
         ctx.fillStyle = color;
         ctx.fillRect(x + 1, y + 1, (w - 2) * hpRatio, h - 2);
 
-        // Border
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, w, h);

@@ -63,9 +63,10 @@ export class Game {
     update(dt) {
         if (this.state !== 'playing') return;
 
-        // Hit freeze: skip updates while frozen (but still render)
+        // Hit freeze: skip game updates while frozen (but still render + tick HUD)
         if (this.freezeTimer > 0) {
             this.freezeTimer -= dt;
+            this.hud.update(dt);
             return;
         }
 
@@ -85,6 +86,9 @@ export class Game {
         // Combat checks
         this.checkPlayerAttacks();
         this.checkEnemyAttacks();
+
+        // HUD combo timer
+        this.hud.update(dt);
 
         // Camera follow player + shake
         this.camera.follow(this.player.x, this.player.y);
@@ -112,6 +116,9 @@ export class Game {
 
                 // Camera shake
                 this.camera.shake(isHeavy ? 8 : 4, isKill ? 200 : 100);
+
+                // Combo counter
+                this.hud.registerHit();
             }
         }
     }
