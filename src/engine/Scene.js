@@ -76,13 +76,13 @@ export class Scene {
             const resp = await fetch(jsonPath);
             const data = await resp.json();
 
-            // Load sprite sheet image
+            // Load sprite sheet image - resolve relative to character JSON location
             const image = new Image();
-            // Resolve sprite sheet path relative to character JSON location
             const basePath = jsonPath.substring(0, jsonPath.lastIndexOf('/') + 1);
-            image.src = basePath + data.spriteSheet.replace('../', '../assets/');
-            // Simpler: construct from known asset path
-            image.src = `assets/sprites/${name === 'hero' ? 'hero' : 'villian'}.png`;
+            const spritePath = data.spriteSheet.startsWith('../')
+                ? basePath + data.spriteSheet
+                : data.spriteSheet;
+            image.src = spritePath;
 
             await new Promise((resolve, reject) => {
                 image.onload = resolve;

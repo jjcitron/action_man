@@ -1,9 +1,9 @@
 {
   "name": "Cherry Blossom Village",
-  "background": "../assets/backgrounds/village.png",
+  "background": "assets/backgrounds/village.png",
   "characters": {
-    "hero": "../assets/characters/hero.json",
-    "villian": "../assets/characters/villian.json"
+    "hero": "assets/characters/hero.json",
+    "villian": "assets/characters/villian.json"
   },
   "playerStart": { "x": 400, "y": 1050 },
   "walkablePolygon": [
