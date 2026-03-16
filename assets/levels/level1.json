@@ -1,0 +1,33 @@
+{
+  "name": "Cherry Blossom Village",
+  "background": "../assets/backgrounds/village.png",
+  "characters": {
+    "hero": "../assets/characters/hero.json",
+    "villian": "../assets/characters/villian.json"
+  },
+  "playerStart": { "x": 400, "y": 1050 },
+  "walkablePolygon": [
+    { "x": 30, "y": 1300 },
+    { "x": 30, "y": 880 },
+    { "x": 300, "y": 820 },
+    { "x": 700, "y": 770 },
+    { "x": 1100, "y": 740 },
+    { "x": 1500, "y": 750 },
+    { "x": 1900, "y": 770 },
+    { "x": 2300, "y": 800 },
+    { "x": 2700, "y": 850 },
+    { "x": 3000, "y": 900 },
+    { "x": 3140, "y": 950 },
+    { "x": 3140, "y": 1300 }
+  ],
+  "depthLines": [
+    { "y": 740, "scale": 0.55 },
+    { "y": 1300, "scale": 1.25 }
+  ],
+  "objects": [
+    { "type": "enemy", "x": 1200, "y": 1000, "character": "villian" },
+    { "type": "enemy", "x": 1800, "y": 950, "character": "villian", "tint": { "hue": 30 } },
+    { "type": "enemy", "x": 2200, "y": 1050, "character": "villian", "tint": { "hue": -60 } },
+    { "type": "enemy", "x": 2600, "y": 980, "character": "villian", "tint": { "hue": 120 } }
+  ]
+}

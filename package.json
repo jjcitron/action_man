@@ -1,0 +1,11 @@
+{
+  "name": "action-man",
+  "version": "0.0.1",
+  "description": "Side scrolling action adventure beat em up",
+  "scripts": {
+    "start": "npx http-server . -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Man - Visual Editor</title>
+    <style>
+        :root {
+            --bg-color: #222;
+            --panel-bg: #333;
+            --text-color: #eee;
+            --accent: #4CAF50;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #editor-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #111;
+            overflow: auto;
+            position: relative;
+        }
+
+        #sidebar {
+            width: 300px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid #444;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        canvas {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: #000;
+        }
+
+        .tool-group {
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #aaa;
+        }
+
+        button {
+            padding: 8px 12px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 5px;
+            width: 100%;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        button.active {
+            background-color: var(--accent);
+        }
+
+        input[type="file"] {
+            width: 100%;
+        }
+
+        .row {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="editor-container">
+        <canvas id="editorCanvas"></canvas>
+    </div>
+    <div id="sidebar">
+        <div class="tool-group">
+            <h3>Project</h3>
+            <button id="btn-save">Save JSON</button>
+            <label>Load JSON <input type="file" id="file-load-json" accept=".json"></label>
+        </div>
+        <div class="tool-group">
+            <h3>Scene</h3>
+            <label>Load Background <input type="file" id="file-bg" accept="image/*"></label>
+            <div class="row">
+                <label>X: <input type="number" id="bg-x" value="0" style="width: 50px"></label>
+                <label>Y: <input type="number" id="bg-y" value="0" style="width: 50px"></label>
+            </div>
+            <div class="row">
+                <label>Scale: <input type="number" id="bg-scale" value="1.0" step="0.1" style="width: 50px"></label>
+            </div>
+        </div>
+        <div class="tool-group">
+            <h3>Tools</h3>
+            <button id="tool-select" class="active">Select / Move</button>
+            <button id="tool-polygon">Draw Walkable Area</button>
+            <button id="tool-depth">Set Depth Scale</button>
+            <button id="tool-object">Place Object/Exit</button>
+        </div>
+        <div class="tool-group">
+            <h3>Sprite Importer</h3>
+            <label>Load Sprite Sheet <input type="file" id="file-sprite" accept="image/*"></label>
+            <button id="btn-add-anim">Add Animation (Idle/Walk...)</button>
+            <div id="anim-list"></div>
+        </div>
+        <div id="inspector">
+            <h3>Properties</h3>
+            <div id="prop-content">No selection</div>
+        </div>
+    </div>
+    <script type="module" src="/src/editor.js"></script>
+</body>
+
+</html>
