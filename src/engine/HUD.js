@@ -95,24 +95,22 @@ export class HUD {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Color ramps up with combo
-        let color;
-        if (count >= 10) color = '#ff00ff';      // purple — legendary
-        else if (count >= 7) color = '#ff4400';   // red-orange — blazing
-        else if (count >= 5) color = '#ff8800';   // orange — hot
-        else if (count >= 3) color = '#ffcc00';   // yellow — nice
-        else color = '#ffffff';                    // white — basic
+        // Bright magenta fill, thick white stroke for contrast
+        const fill = '#ff00ff';
+        const stroke = '#ffffff';
+        const strokeW = Math.max(3, size / 8);
 
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillText(`${count}`, 2, 2);
-
-        // Main text
-        ctx.fillStyle = color;
+        // Number — white outline then magenta fill
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.lineWidth = strokeW;
+        ctx.strokeStyle = stroke;
+        ctx.strokeText(`${count}`, 0, 0);
+        ctx.fillStyle = fill;
         ctx.fillText(`${count}`, 0, 0);
 
         // Label below
-        ctx.font = 'bold 14px monospace';
+        ctx.font = 'bold 16px monospace';
         let label;
         if (count >= 10) label = 'UNSTOPPABLE!';
         else if (count >= 7) label = 'INCREDIBLE!';
@@ -120,10 +118,11 @@ export class HUD {
         else if (count >= 3) label = 'COMBO!';
         else label = 'HITS';
 
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillText(label, 1, size / 2 + 13);
-        ctx.fillStyle = color;
-        ctx.fillText(label, 0, size / 2 + 12);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = stroke;
+        ctx.strokeText(label, 0, size / 2 + 14);
+        ctx.fillStyle = fill;
+        ctx.fillText(label, 0, size / 2 + 14);
 
         ctx.restore();
     }
