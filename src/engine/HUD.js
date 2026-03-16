@@ -13,10 +13,30 @@ export class HUD {
         // Player health bar (top-left)
         this.drawPlayerHealth(ctx, player);
 
-        // Inventory (below health)
-        if (inventory) {
-            inventory.render(ctx);
+        // Controls hint (bottom-right)
+        this.drawControls(ctx);
+    }
+
+    drawControls(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = '11px monospace';
+        const x = ctx.canvas.width - 210;
+        let y = ctx.canvas.height - 95;
+        const lines = [
+            'WASD/Arrows  Move',
+            'Shift+Move   Run',
+            'Space/Z      Attack',
+            'Space again   Combo',
+            'X            Heavy Attack',
+            'C            Dash',
+            'Down         Crouch',
+        ];
+        for (const line of lines) {
+            ctx.fillText(line, x, y);
+            y += 13;
         }
+        ctx.restore();
     }
 
     drawPlayerHealth(ctx, player) {

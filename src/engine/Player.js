@@ -1,6 +1,10 @@
 import { Physics } from './Physics.js';
 import { StateMachine } from './StateMachine.js';
-import { IdleState, WalkState, AttackState, HitState, DeathState } from './PlayerStates.js';
+import {
+    IdleState, WalkState, RunState, DashState, CrouchState,
+    AttackState, ComboAttackState, HeavyAttackState,
+    HitState, DeathState
+} from './PlayerStates.js';
 import { Animator } from './Animator.js';
 import { Combat } from './Combat.js';
 
@@ -24,6 +28,7 @@ export class Player {
 
         // Combat
         this.hitboxDef = { x: 20, y: -100, w: 80, h: 60 };
+        this.heavyHitboxDef = { x: 10, y: -120, w: 120, h: 80 };
         this.hurtboxDef = { x: -25, y: -120, w: 50, h: 120 };
         this.hitboxActive = false;
         this.attackDamage = 1;
@@ -35,7 +40,12 @@ export class Player {
         this.stateMachine = new StateMachine();
         this.stateMachine.addState('idle', new IdleState(this));
         this.stateMachine.addState('walk', new WalkState(this));
+        this.stateMachine.addState('run', new RunState(this));
+        this.stateMachine.addState('dash', new DashState(this));
+        this.stateMachine.addState('crouch', new CrouchState(this));
         this.stateMachine.addState('attack', new AttackState(this));
+        this.stateMachine.addState('comboAttack', new ComboAttackState(this));
+        this.stateMachine.addState('heavyAttack', new HeavyAttackState(this));
         this.stateMachine.addState('hit', new HitState(this));
         this.stateMachine.addState('death', new DeathState(this));
         this.stateMachine.setState('idle');
@@ -70,9 +80,15 @@ export class Player {
         const s = this.scale;
         ctx.scale(this.facingRight ? s : -s, s);
 
-        // Flash when invincible
-        if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer / 80) % 2 === 0) {
+        // Flash when invincible (but not during dash — dash looks smooth)
+        const isDashing = this.currentStateName === 'dash';
+        if (this.invincibleTimer > 0 && !isDashing && Math.floor(this.invincibleTimer / 80) % 2 === 0) {
             ctx.globalAlpha = 0.4;
+        }
+
+        // Dash afterimage effect
+        if (isDashing) {
+            ctx.globalAlpha = 0.7;
         }
 
         // Shadow
@@ -94,7 +110,6 @@ export class Player {
         const frame = this.animator.getCurrentFrame();
         if (!frame) return;
 
-        // Draw centered on X, bottom on Y (feet at origin)
         ctx.drawImage(
             this.spriteSheet,
             frame.x, frame.y, frame.w, frame.h,
@@ -113,7 +128,18 @@ export class Player {
 
     getHitbox() {
         if (!this.hitboxActive) return null;
-        return Combat.getHitbox(this, this.hitboxDef);
+        // Heavy attack uses a wider hitbox
+        const isHeavy = this.currentStateName === 'heavyAttack';
+        const def = isHeavy ? this.heavyHitboxDef : this.hitboxDef;
+        return Combat.getHitbox(this, def);
+    }
+
+    /** Damage multiplier based on current attack type */
+    getAttackDamage() {
+        const state = this.currentStateName;
+        if (state === 'heavyAttack') return this.attackDamage * 3;
+        if (state === 'comboAttack') return this.attackDamage * 2;
+        return this.attackDamage;
     }
 
     getHurtbox() {
@@ -125,7 +151,7 @@ export class Player {
         if (this.hp <= 0) return;
 
         this.hp -= amount;
-        this.invincibleTimer = 1000; // 1 second of invincibility
+        this.invincibleTimer = 1000;
 
         if (this.hp <= 0) {
             this.hp = 0;

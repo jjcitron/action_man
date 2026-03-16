@@ -20,10 +20,16 @@ export class Game {
         this.hud = new HUD();
 
         this.state = 'loading'; // loading, playing, paused, gameover
+
+        // Hit freeze: pause game for a few frames on impactful hits
+        this.freezeTimer = 0;
+
+        // Track which enemies were already hit by current attack swing
+        // (prevents multi-hit per single attack)
+        this.hitThisSwing = new Set();
     }
 
     async start(levelUrl) {
-        // Show loading screen
         this.ctx.fillStyle = '#111';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.fillStyle = '#00ffff';
@@ -37,17 +43,19 @@ export class Game {
             this.state = 'playing';
         }
 
-        // Start game loop
         this.lastTime = performance.now();
         requestAnimationFrame(this.loop.bind(this));
     }
 
     loop(timestamp) {
-        const dt = Math.min(timestamp - this.lastTime, 50); // Cap at 50ms to prevent spiral
+        const dt = Math.min(timestamp - this.lastTime, 50);
         this.lastTime = timestamp;
 
         this.update(dt);
         this.render();
+
+        // Flush one-shot input at end of frame
+        this.input.endFrame();
 
         requestAnimationFrame(this.loop.bind(this));
     }
@@ -55,24 +63,32 @@ export class Game {
     update(dt) {
         if (this.state !== 'playing') return;
 
+        // Hit freeze: skip updates while frozen (but still render)
+        if (this.freezeTimer > 0) {
+            this.freezeTimer -= dt;
+            return;
+        }
+
         // Update player
         this.player.update(this.input, dt);
+
+        // Clear hit tracking when player isn't attacking
+        if (!this.player.hitboxActive) {
+            this.hitThisSwing.clear();
+        }
 
         // Update enemies
         for (const enemy of this.scene.enemies) {
             enemy.update(this.player, dt);
         }
 
-        // Combat: player attacks hitting enemies
+        // Combat checks
         this.checkPlayerAttacks();
-
-        // Combat: enemy attacks hitting player
         this.checkEnemyAttacks();
 
-        // Camera follow player
+        // Camera follow player + shake
         this.camera.follow(this.player.x, this.player.y);
-
-        // Clear one-shot key presses (for future use)
+        this.camera.updateShake(dt);
     }
 
     checkPlayerAttacks() {
@@ -81,10 +97,21 @@ export class Game {
 
         for (const enemy of this.scene.enemies) {
             if (enemy.state === 'dead') continue;
+            if (this.hitThisSwing.has(enemy)) continue; // already hit this swing
 
             const enemyHurtbox = enemy.getHurtbox();
             if (Combat.checkCollision(playerHitbox, enemyHurtbox)) {
-                enemy.takeDamage(this.player.attackDamage, this.player.x);
+                const damage = this.player.getAttackDamage();
+                enemy.takeDamage(damage, this.player.x);
+                this.hitThisSwing.add(enemy);
+
+                // Hit freeze — heavier attacks freeze longer
+                const isHeavy = this.player.currentStateName === 'heavyAttack';
+                const isKill = enemy.hp <= 0;
+                this.freezeTimer = isKill ? 80 : isHeavy ? 50 : 30;
+
+                // Camera shake
+                this.camera.shake(isHeavy ? 8 : 4, isKill ? 200 : 100);
             }
         }
     }
@@ -99,6 +126,8 @@ export class Game {
 
             if (Combat.checkCollision(enemyHitbox, playerHurtbox)) {
                 this.player.takeDamage(enemy.attackDamage);
+                this.freezeTimer = 40;
+                this.camera.shake(6, 150);
             }
         }
     }
@@ -106,7 +135,6 @@ export class Game {
     render() {
         const ctx = this.ctx;
 
-        // Clear
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -121,18 +149,16 @@ export class Game {
 
         // Collect all entities and sort by Y (depth sorting)
         const entities = [];
-        entities.push({ y: this.player.y, render: () => this.player.render(ctx), type: 'player' });
+        entities.push({ y: this.player.y, render: () => this.player.render(ctx) });
 
         for (const enemy of this.scene.enemies) {
             if (enemy.state !== 'dead' || enemy.deathTimer < 2000) {
-                entities.push({ y: enemy.y, render: () => enemy.render(ctx), type: 'enemy', ref: enemy });
+                entities.push({ y: enemy.y, render: () => enemy.render(ctx) });
             }
         }
 
-        // Sort by Y for depth ordering
         entities.sort((a, b) => a.y - b.y);
 
-        // Render all entities
         for (const entity of entities) {
             entity.render();
         }
@@ -144,7 +170,7 @@ export class Game {
 
         ctx.restore();
 
-        // HUD rendering (screen space, no camera transform)
+        // HUD (screen space)
         this.hud.render(ctx, this.player, this.scene.enemies, this.inventory);
 
         // Game over overlay

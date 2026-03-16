@@ -19,6 +19,12 @@ export class Camera {
 
         // Follow smoothing (0 = instant, 1 = no movement)
         this.lerpFactor = 0.08;
+
+        // Screen shake
+        this.shakeIntensity = 0;
+        this.shakeTimer = 0;
+        this.shakeOffsetX = 0;
+        this.shakeOffsetY = 0;
     }
 
     /** Configure camera for a level's background dimensions */
@@ -61,8 +67,29 @@ export class Camera {
         this.y = Math.max(0, Math.min(this.levelHeight - this.viewportHeight, this.y));
     }
 
+    /** Trigger screen shake */
+    shake(intensity, duration) {
+        this.shakeIntensity = intensity;
+        this.shakeTimer = duration;
+    }
+
+    /** Update shake (call each frame with dt) */
+    updateShake(dt) {
+        if (this.shakeTimer > 0) {
+            this.shakeTimer -= dt;
+            const decay = this.shakeTimer > 0 ? this.shakeTimer / 200 : 0;
+            this.shakeOffsetX = (Math.random() - 0.5) * 2 * this.shakeIntensity * decay;
+            this.shakeOffsetY = (Math.random() - 0.5) * 2 * this.shakeIntensity * decay;
+        } else {
+            this.shakeOffsetX = 0;
+            this.shakeOffsetY = 0;
+        }
+    }
+
     /** Apply camera transform to canvas context (call before drawing world objects) */
     applyTransform(ctx) {
+        // Apply shake offset in screen space (before world scale)
+        ctx.translate(this.shakeOffsetX, this.shakeOffsetY);
         ctx.scale(this.viewScale, this.viewScale);
         ctx.translate(-this.x, -this.y);
     }
